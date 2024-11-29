@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [[ $# -eq 0 ]] ; then
+    echo 'Please provide a day: ./set_up_day <day>'
+    exit 0
+fi
+
+if [[ `expr length $1` -lt 2 ]] ; then
+    DAY="day0$1"
+else 
+    DAY="day$1"
+fi
+
+cp -r dayTemplate $DAY
+aocdl -force -wait -output $DAY/input.txt -year 2024 -day $1
