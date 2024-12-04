@@ -1,9 +1,9 @@
-require('../utils')()
+import '../utils.js'
 
-const part1 = input => {
+export const part1 = input => {
   let l = []
   let r = []
-  const nums = input.toLines().map(line => line.toNums())
+  const nums = input.toLines().map(line => line.getNums())
 
   for (const num of nums) {
     l.push(num[0])
@@ -21,10 +21,10 @@ const part1 = input => {
   return sum
 }
 
-const part2 = input => {
+export const part2 = input => {
   const l = []
   const r = []
-  const nums = input.toLines().map(line => line.toNums())
+  const nums = input.toLines().map(line => line.getNums())
 
   for (const num of nums) {
     l.push(num[0])
@@ -38,5 +38,3 @@ const part2 = input => {
 
   return sum
 }
-
-module.exports = { part1, part2 }

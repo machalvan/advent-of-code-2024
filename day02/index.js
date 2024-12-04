@@ -1,8 +1,8 @@
-require('../utils')()
+import '../utils.js'
 
-const part1 = input => {
+export const part1 = input => {
   const safeReports = input.toLines().filter(line => {
-    const nums = line.toNums()
+    const nums = line.getNums()
 
     return (
       (JSON.stringify(nums) == JSON.stringify(nums.toSortedAsc()) ||
@@ -18,9 +18,9 @@ const part1 = input => {
   return safeReports.length
 }
 
-const part2 = input => {
+export const part2 = input => {
   const safeReports = input.toLines().filter(line => {
-    const nums = line.toNums()
+    const nums = line.getNums()
 
     for (let i = -1; i < nums.length; i++) {
       const filteredNums = nums[i].filter((_, j) => j !== i)
@@ -44,5 +44,3 @@ const part2 = input => {
 
   return safeReports.length
 }
-
-module.exports = { part1, part2 }

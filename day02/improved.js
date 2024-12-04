@@ -1,4 +1,4 @@
-require('../utils')()
+import '../utils.js'
 
 const isSafe = nums => {
   const numsString = JSON.stringify(nums)
@@ -15,16 +15,14 @@ const isSafe = nums => {
   )
 }
 
-const part1 = input => {
-  return input.toLines().filter(line => isSafe(line.toNums())).length
+export const part1 = input => {
+  return input.toLines().filter(line => isSafe(line.getNums())).length
 }
 
-const part2 = input => {
+export const part2 = input => {
   return input.toLines().filter(line => {
-    const nums = line.toNums()
+    const nums = line.getNums()
     if (isSafe(nums)) return true
     return nums.some((_, i) => isSafe(nums.filter((_, j) => j !== i)))
   }).length
 }
-
-module.exports = { part1, part2 }

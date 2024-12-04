@@ -1,7 +1,7 @@
-require('../utils')()
+import '../utils.js'
 
-const part1 = input => {
-  const nums = input.toLines().map(line => line.toNums())
+export const part1 = input => {
+  const nums = input.toLines().map(line => line.getNums())
 
   let l = []
   let r = []
@@ -16,8 +16,8 @@ const part1 = input => {
   return l.reduce((acc, _, i) => acc + Math.abs(l[i] - r[i]), 0)
 }
 
-const part2 = input => {
-  const nums = input.toLines().map(line => line.toNums())
+export const part2 = input => {
+  const nums = input.toLines().map(line => line.getNums())
 
   const l = []
   const r = []
@@ -28,5 +28,3 @@ const part2 = input => {
 
   return l.reduce((acc, _, i) => acc + l[i] * r.count(l[i]), 0)
 }
-
-module.exports = { part1, part2 }

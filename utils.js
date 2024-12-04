@@ -1,31 +1,34 @@
 // Functions
 
-module.exports = function () {
-  this.range = (start, end, step = 1) => {
-    return start <= end
-      ? [...Array(Math.floor((end - start) / step) + 1).keys()].map(
-          num => num * step + start
-        )
-      : [...Array(Math.floor((start - end) / step) + 1).keys()].map(
-          num => -num * step + start
-        )
-  }
+export function createGrid(width, height, cell = 0) {
+  return Array(height)
+    .fill()
+    .map(() => Array(width).fill(cell))
+}
 
-  this.loop = (times, callback) => {
-    for (let i = 0; i < times; i++) {
-      callback(i)
-    }
-  }
+export function createRange(start, end, step = 1) {
+  // [start, end)
+  //
+  // Example usage:
+  // createRange(1, 5) // [1, 2, 3, 4]
 
-  this.createGrid = (width, height, cell = 0) => {
-    return Array(height)
-      .fill()
-      .map(() => Array(width).fill(cell))
-  }
+  return start <= end
+    ? [...Array(Math.floor((end - 1 - start) / step) + 1).keys()].map(
+        num => num * step + start
+      )
+    : [...Array(Math.floor((start - end - 1) / step) + 1).keys()].map(
+        num => -num * step + start
+      )
+}
 
-  this.manhattan = (x1, y1, x2, y2) => {
-    return Math.abs(x1 - x2) + Math.abs(y1 - y2)
+export function loop(times, callback) {
+  for (let i = 0; i < times; i++) {
+    callback(i)
   }
+}
+
+export function manhattan(x1, y1, x2, y2) {
+  return Math.abs(x1 - x2) + Math.abs(y1 - y2)
 }
 
 // Array
@@ -44,6 +47,16 @@ Array.prototype.sum = function () {
 
 Array.prototype.prod = function () {
   return this.reduce((a, b) => a * b, 1)
+}
+
+Array.prototype.equals = function (arr) {
+  if (this.length !== arr.length) return false
+
+  for (let i = 0; i < this.length; i++) {
+    if (this[i] !== arr[i]) return false
+  }
+
+  return true
 }
 
 Array.prototype.toSortedAsc = function () {
@@ -79,11 +92,79 @@ Array.prototype.isSupersetOf = function (arr) {
 }
 
 Array.prototype.transpose = function () {
-  return this[0].map((_, colIndex) => this.map(row => row[colIndex]))
+  return this[0].map((_, i) => this.map(row => row[i]))
+}
+
+Array.prototype.rotate = function (times = 1) {
+  if (times === 0) return this
+  const rotated = this[0].map((_, i) => this.map(row => row[i]).reverse())
+  return rotated.rotate(times.mod(4) - 1)
 }
 
 Array.prototype.count = function (value) {
   return this.filter(item => item === value).length
+}
+
+Array.prototype.countAll = function () {
+  return this.reduce((acc, cur) => {
+    acc[cur] = (acc[cur] ?? 0) + 1
+    return acc
+  }, {})
+}
+
+Array.prototype.gcd = function () {
+  const gcd = (a, b) => (b == 0 ? a : gcd(b, a % b))
+  return this.reduce(gcd, 0)
+}
+
+Array.prototype.lcm = function () {
+  const gcd = (a, b) => (b == 0 ? a : gcd(b, a % b))
+  const lcm = (a, b) => (a / gcd(a, b)) * b
+  return this.reduce(lcm, 1)
+}
+
+Array.prototype.forEachSurrounding = function (x, y, callback) {
+  for (const dy of [-1, 0, 1]) {
+    for (const dx of [-1, 0, 1]) {
+      if (dx === 0 && dy === 0) continue
+      if (this[y + dy]?.[x + dx] === undefined) continue
+
+      callback({
+        x: x + dx,
+        y: y + dy,
+        pos: [x + dx, y + dy],
+        cell: this[y + dy][x + dx],
+        dir: {
+          '0,-1': 0,
+          '1,0': 1,
+          '0,1': 2,
+          '-1,0': 3,
+          '1,-1': 4,
+          '1,1': 5,
+          '-1,1': 6,
+          '-1,-1': 7
+        }[[dx, dy]]
+      })
+    }
+  }
+}
+
+Array.prototype.forEachAdjacent = function (x, y, callback) {
+  for (const dy of [-1, 0, 1]) {
+    for (const dx of [-1, 0, 1]) {
+      if (dx === 0 && dy === 0) continue
+      if (this[y + dy]?.[x + dx] === undefined) continue
+      if (Math.abs(dx) + Math.abs(dy) !== 1) continue
+
+      callback({
+        x: x + dx,
+        y: y + dy,
+        pos: [x + dx, y + dy],
+        cell: this[y + dy][x + dx],
+        dir: { '0,-1': 0, '1,0': 1, '0,1': 2, '-1,0': 3 }[[dx, dy]]
+      })
+    }
+  }
 }
 
 Array.prototype.getPermutations = function () {
@@ -137,12 +218,16 @@ String.prototype.isUpperCase = function () {
   return this === this.toUpperCase()
 }
 
-String.prototype.toNums = function () {
+String.prototype.getNums = function () {
   return this.match(/-?\d+(\.\d+)?/g).toNums()
 }
 
-String.prototype.toInts = function () {
+String.prototype.getInts = function () {
   return this.match(/-?\d+/g).toNums()
+}
+
+String.prototype.isNum = function () {
+  return !isNaN(this)
 }
 
 String.prototype.toBin = function () {
