@@ -167,6 +167,14 @@ Array.prototype.forEachAdjacent = function (x, y, callback) {
   }
 }
 
+Array.prototype.forEachCell = function (callback) {
+  for (let r = 0; r < this.length; r++) {
+    for (let c = 0; c < this[r].length; c++) {
+      callback({ r, c, pos: [c, r], cell: this[r][c] })
+    }
+  }
+}
+
 Array.prototype.getPermutations = function () {
   // Heap's algorithm
   //
