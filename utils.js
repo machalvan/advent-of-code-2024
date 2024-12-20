@@ -157,46 +157,34 @@ Array.prototype.lcm = function () {
 }
 
 Array.prototype.forEachSurrounding = function (x, y, callback) {
-  for (const dy of [-1, 0, 1]) {
-    for (const dx of [-1, 0, 1]) {
-      if (dx === 0 && dy === 0) continue
-      if (this[y + dy]?.[x + dx] === undefined) continue
+  // prettier-ignore
+  const dirs = [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]]
 
-      callback({
-        x: x + dx,
-        y: y + dy,
-        pos: [x + dx, y + dy],
-        cell: this[y + dy][x + dx],
-        dir: {
-          '0,-1': 0,
-          '1,0': 1,
-          '0,1': 2,
-          '-1,0': 3,
-          '1,-1': 4,
-          '1,1': 5,
-          '-1,1': 6,
-          '-1,-1': 7
-        }[[dx, dy]]
-      })
-    }
+  for (const [[dir, [dy, dx]]] of dirs.entries()) {
+    if (dx === 0 && dy === 0) continue
+
+    const nx = x + dx
+    const ny = y + dy
+    const cell = this[ny]?.[nx]
+
+    if (cell === undefined) continue
+
+    callback({ x: nx, y: ny, pos: [nx, ny], cell, dir })
   }
 }
 
 Array.prototype.forEachAdjacent = function (x, y, callback) {
-  for (const dy of [-1, 0, 1]) {
-    for (const dx of [-1, 0, 1]) {
-      if (dx === 0 && dy === 0) continue
-      if (this[y + dy]?.[x + dx] === undefined) continue
-      if (Math.abs(dx) + Math.abs(dy) !== 1) continue
+  // prettier-ignore
+  const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]]
 
-      callback({
-        x: x + dx,
-        y: y + dy,
-        pos: [x + dx, y + dy],
-        cell: this[y + dy][x + dx],
-        dir: { '0,-1': 0, '1,0': 1, '0,1': 2, '-1,0': 3 }[[dx, dy]]
-      })
-    }
+  for (const [dir, [dy, dx]] of dirs.entries()) {
+    const nx = x + dx
+    const ny = y + dy
+    const cell = this[ny]?.[nx]
+
+    if (cell === undefined) continue
+
+    callback({ x: nx, y: ny, pos: [nx, ny], cell, dir })
   }
 }
 
@@ -282,7 +270,19 @@ Array.prototype.getShortestPath = function (start, end, getValid = () => true) {
     seen.add(key)
 
     this.forEachAdjacent(x, y, ({ x: nx, y: ny }) => {
-      if (!getValid({ x: nx, y: ny, cell: this[ny]?.[nx] })) return
+      if (
+        !getValid({
+          x: nx,
+          y: ny,
+          pos: [nx, ny],
+          cell: this[ny]?.[nx],
+          steps: path.length - 1,
+          path
+        })
+      ) {
+        return
+      }
+
       queue.push([nx, ny, [...path, [nx, ny]]])
     })
   }
@@ -318,7 +318,7 @@ Array.prototype.getShortestDist = function (start, end, getValid = () => true) {
     if (x === end[0] && y === end[1]) return steps
 
     this.forEachAdjacent(x, y, ({ x: nx, y: ny }) => {
-      if (!getValid({ x: nx, y: ny, cell: this[ny]?.[nx] })) return
+      if (!getValid({ x: nx, y: ny, cell: this[ny]?.[nx], steps })) return
       queue.push([nx, ny, steps + 1])
     })
   }
@@ -393,65 +393,6 @@ Object.prototype.getShortestDist = function (start, end) {
   }
 
   return distances[end]
-}
-
-Object.prototype.aStar = function (start, end) {
-  /**
-   * ???
-   *
-   * A* algorithm
-   *
-   * Example usage:
-   * const graph = {
-   *  a: { b: 1, c: 4 },
-   * b: { c: 2, d: 6 },
-   * c: { d: 3, e: 8 },
-   * d: { e: 1 },
-   * e: {},
-   * }
-   * graph.aStar('a', 'e')  // 7
-   */
-
-  const calculateHeuristic = (vertex, end) => {
-    return manhattan(
-      ...vertex.split(',').map(Number),
-      ...end.split(',').map(Number)
-    )
-  }
-
-  const distances = {}
-  const heuristics = {} // To store heuristic values
-
-  for (const vertex in this) {
-    distances[vertex] = Infinity
-    heuristics[vertex] = calculateHeuristic(vertex, end) // Precompute heuristics
-  }
-
-  distances[start] = 0
-
-  const pq = [[0, start]] // Priority queue now uses f(x)
-
-  while (pq.length > 0) {
-    const [distance, vertex] = pq.pop()
-
-    if (vertex === end) return distances[end] // Return as soon as we reach the goal
-
-    if (distance > distances[vertex]) continue
-
-    for (const [neighbor, weight] of Object.entries(this[vertex])) {
-      const newDistance = distances[vertex] + weight
-
-      if (newDistance < distances[neighbor]) {
-        distances[neighbor] = newDistance
-
-        // Update priority queue using f(x) = g(x) + h(x)
-        const f = newDistance + heuristics[neighbor]
-        pq.push([f, neighbor])
-      }
-    }
-  }
-
-  return distances[end] // Return the shortest distance to the goal
 }
 
 // Functions
