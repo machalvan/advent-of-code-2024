@@ -13,6 +13,12 @@ Number.prototype.mod = function (num) {
   return ((this % num) + num) % num
 }
 
+Number.prototype.loop = function (times) {
+  for (let i = 0; i < this; i++) {
+    times(i)
+  }
+}
+
 // String
 
 String.prototype.toList = function () {
@@ -158,24 +164,12 @@ Array.prototype.lcm = function () {
 
 Array.prototype.forEachSurrounding = function (x, y, callback) {
   // prettier-ignore
-  const dirs = [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]]
-
-  for (const [[dir, [dy, dx]]] of dirs.entries()) {
-    if (dx === 0 && dy === 0) continue
-
-    const nx = x + dx
-    const ny = y + dy
-    const cell = this[ny]?.[nx]
-
-    if (cell === undefined) continue
-
-    callback({ x: nx, y: ny, pos: [nx, ny], cell, dir })
-  }
-}
-
-Array.prototype.forEachAdjacent = function (x, y, callback) {
-  // prettier-ignore
-  const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+  // up right down left
+  // up-right down-right down-left up-left
+  const dirs = [
+    [-1, 0], [0, 1], [1, 0], [0, -1], 
+    [-1, 1], [1, 1], [1, -1], [-1, -1]
+  ]
 
   for (const [dir, [dy, dx]] of dirs.entries()) {
     const nx = x + dx
@@ -184,7 +178,30 @@ Array.prototype.forEachAdjacent = function (x, y, callback) {
 
     if (cell === undefined) continue
 
-    callback({ x: nx, y: ny, pos: [nx, ny], cell, dir })
+    callback({
+      x: nx,
+      y: ny,
+      pos: [nx, ny],
+      cell,
+      dir,
+      isCorner: dx !== 0 && dy !== 0
+    })
+  }
+}
+
+Array.prototype.forEachAdjacent = function (x, y, callback) {
+  // prettier-ignore
+  // up right down left
+  const dirs = [[-1, 0], [0, 1], [1, 0], [0, -1]]
+
+  for (const [dir, [dy, dx]] of dirs.entries()) {
+    const nx = x + dx
+    const ny = y + dy
+    const cell = this[ny]?.[nx]
+
+    if (cell === undefined) continue
+
+    callback({ x: nx, y: ny, pos: [nx, ny], dx, dy, cell, dir })
   }
 }
 
@@ -194,6 +211,80 @@ Array.prototype.forEachCell = function (callback) {
       callback({ r, c, pos: [c, r], cell: this[r][c] })
     }
   }
+}
+
+Array.prototype.getShortestDist = function (start, end, getValid = () => true) {
+  /**
+   * BFS
+   *
+   * Example usage:
+   * const graph = [
+   *   ['S', '.', '.', '.', '.'],
+   *   ['.', '#', '#', '#', '.'],
+   *   ['.', '#', '.', '.', '.'],
+   *   ['.', '.', '.', '#', '#'],
+   *   ['.', '#', '.', '.', 'E'],
+   * ]
+   * graph.getShortestDist([0, 0], [4, 4], ({ cell }) => cell !== '#')
+   * -> 8
+   */
+
+  const queue = [[...start, 0]]
+  const seen = new Map()
+  while (queue.length) {
+    const [x, y, steps] = queue.shift()
+
+    const key = `${x},${y}`
+    if (seen.has(key) && seen.get(key) <= steps) continue
+    seen.set(key, steps)
+
+    if (x === end[0] && y === end[1]) return steps
+
+    this.forEachAdjacent(x, y, ({ x: nx, y: ny, ...rest }) => {
+      if (!getValid({ x: nx, y: ny, steps, ...rest })) return
+      queue.push([nx, ny, steps + 1])
+    })
+  }
+
+  return null
+}
+
+Array.prototype.getShortestPath = function (start, end, getValid = () => true) {
+  /**
+   * BFS
+   *
+   * Example usage:
+   * const graph = [
+   *   ['S', '.', '.', '.', '.'],
+   *   ['.', '#', '#', '#', '.'],
+   *   ['.', '#', '.', '.', '.'],
+   *   ['.', '.', '.', '#', '#'],
+   *   ['.', '#', '.', '.', 'E'],
+   * ]
+   * graph.getShortestDist([0, 0], [4, 4], ({ cell }) => cell !== '#')
+   * -> [[0, 0], [0, 1], [0, 2], [0, 3], [1, 3], [2, 3], [2, 4], [3, 4], [4, 4]]
+   */
+
+  const queue = [[...start, [[...start, undefined]]]]
+  const seen = new Set()
+  while (queue.length) {
+    const [x, y, path] = queue.shift()
+
+    if (x === end[0] && y === end[1]) return path
+
+    const key = `${x},${y}`
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    this.forEachAdjacent(x, y, ({ x: nx, y: ny, ...rest }) => {
+      const steps = path.length - 1
+      if (!getValid({ x: nx, y: ny, steps, ...rest })) return
+
+      queue.push([nx, ny, [...path, [nx, ny]]])
+    })
+  }
+
+  return null
 }
 
 Array.prototype.aStar = function (start, end, getValid = () => true) {
@@ -227,99 +318,14 @@ Array.prototype.aStar = function (start, end, getValid = () => true) {
 
     if (x === end[0] && y === end[1]) return path
 
-    this.forEachAdjacent(x, y, ({ x: nx, y: ny }) => {
-      if (this[ny]?.[nx] === undefined) return
-      if (!getValid({ x: nx, y: ny, cell: this[ny][nx] })) return
+    this.forEachAdjacent(x, y, ({ x: nx, y: ny, ...rest }) => {
+      if (!getValid({ x: nx, y: ny, ...rest })) return
 
       const g = path.length
       const h = calculateHeuristic([nx, ny], end)
       const f = g + h
 
       queue.push([nx, ny, [...path, [nx, ny]], f])
-    })
-  }
-
-  return null
-}
-
-Array.prototype.getShortestPath = function (start, end, getValid = () => true) {
-  /**
-   * BFS
-   *
-   * Example usage:
-   * const graph = [
-   *   ['S', '.', '.', '.', '.'],
-   *   ['.', '#', '#', '#', '.'],
-   *   ['.', '#', '.', '.', '.'],
-   *   ['.', '.', '.', '#', '#'],
-   *   ['.', '#', '.', '.', 'E'],
-   * ]
-   * graph.getShortestDist([0, 0], [4, 4], ({ cell }) => cell !== '#')
-   * -> [[0, 0], [0, 1], [0, 2], [0, 3], [1, 3], [2, 3], [2, 4], [3, 4], [4, 4]]
-   */
-
-  const queue = [[...start, [start]]]
-  const seen = new Set()
-  while (queue.length) {
-    const [x, y, path] = queue.shift()
-
-    if (x === end[0] && y === end[1]) return path
-
-    const key = `${x},${y}`
-    if (seen.has(key)) continue
-    seen.add(key)
-
-    this.forEachAdjacent(x, y, ({ x: nx, y: ny }) => {
-      if (
-        !getValid({
-          x: nx,
-          y: ny,
-          pos: [nx, ny],
-          cell: this[ny]?.[nx],
-          steps: path.length - 1,
-          path
-        })
-      ) {
-        return
-      }
-
-      queue.push([nx, ny, [...path, [nx, ny]]])
-    })
-  }
-
-  return null
-}
-
-Array.prototype.getShortestDist = function (start, end, getValid = () => true) {
-  /**
-   * BFS
-   *
-   * Example usage:
-   * const graph = [
-   *   ['S', '.', '.', '.', '.'],
-   *   ['.', '#', '#', '#', '.'],
-   *   ['.', '#', '.', '.', '.'],
-   *   ['.', '.', '.', '#', '#'],
-   *   ['.', '#', '.', '.', 'E'],
-   * ]
-   * graph.getShortestDist([0, 0], [4, 4], ({ cell }) => cell !== '#')
-   * -> 8
-   */
-
-  const queue = [[...start, 0]]
-  const seen = new Map()
-  while (queue.length) {
-    const [x, y, steps] = queue.shift()
-
-    const key = `${x},${y}`
-    if (seen.has(key) && seen.get(key) <= steps) continue
-    seen.set(key, steps)
-
-    if (x === end[0] && y === end[1]) return steps
-
-    this.forEachAdjacent(x, y, ({ x: nx, y: ny }) => {
-      if (!getValid({ x: nx, y: ny, cell: this[ny]?.[nx], steps })) return
-      queue.push([nx, ny, steps + 1])
     })
   }
 
@@ -353,6 +359,18 @@ Array.prototype.getPermutations = function () {
 }
 
 // Object
+
+Object.prototype.max = function () {
+  /**
+   * Example usage:
+   * const obj = { a: 1, b: 2, c: 3 }
+   * obj.max()  // { key: 'c', value: 3 }
+   */
+  return Object.entries(this).reduce(
+    (max, [key, value]) => (value > max.value ? { key, value } : max),
+    { key: null, value: -Infinity }
+  )
+}
 
 Object.prototype.getShortestDist = function (start, end) {
   /**
@@ -418,12 +436,6 @@ export function createRange(start, end, step = 1) {
     : [...Array(Math.floor((start - end - 1) / step) + 1).keys()].map(
         num => -num * step + start
       )
-}
-
-export function loop(times, callback) {
-  for (let i = 0; i < times; i++) {
-    callback(i)
-  }
 }
 
 export function manhattan(x1, y1, x2, y2) {
