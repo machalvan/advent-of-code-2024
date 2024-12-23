@@ -360,58 +360,62 @@ Array.prototype.getPermutations = function () {
 
 // Object
 
-Object.prototype.max = function () {
-  /**
-   * Example usage:
-   * const obj = { a: 1, b: 2, c: 3 }
-   * obj.max()  // { key: 'c', value: 3 }
-   */
-  return Object.entries(this).reduce(
-    (max, [key, value]) => (value > max.value ? { key, value } : max),
-    { key: null, value: -Infinity }
-  )
-}
-
-Object.prototype.getShortestDist = function (start, end) {
-  /**
-   * Dijkstra's algorithm
-   *
-   * Example usage:
-   * const graph = {
-   *   a: { b: 1, c: 4 },
-   *   b: { c: 2, d: 6 },
-   *   c: { d: 3, e: 8 },
-   *   d: { e: 1 },
-   *   e: {},
-   * }
-   * graph.getShortestDist('a', 'e')  // 7
-   */
-
-  const distances = {}
-  for (const vertex in this) {
-    distances[vertex] = Infinity
+Object.defineProperty(Object.prototype, 'max', {
+  value: function () {
+    /**
+     * Example usage:
+     * const obj = { a: 1, b: 2, c: 3 }
+     * obj.max()  // { key: 'c', value: 3 }
+     */
+    return Object.entries(this).reduce(
+      (max, [key, value]) => (value > max.value ? { key, value } : max),
+      { key: null, value: -Infinity }
+    )
   }
+})
 
-  distances[start] = 0
+Object.defineProperty(Object.prototype, 'getShortestDist', {
+  value: function (start, end) {
+    /**
+     * Dijkstra's algorithm
+     *
+     * Example usage:
+     * const graph = {
+     *   a: { b: 1, c: 4 },
+     *   b: { c: 2, d: 6 },
+     *   c: { d: 3, e: 8 },
+     *   d: { e: 1 },
+     *   e: {},
+     * }
+     * graph.getShortestDist('a', 'e')  // 7
+     */
 
-  const pq = [[0, start]]
-  while (pq.length > 0) {
-    const [distance, vertex] = pq.pop()
+    const distances = {}
+    for (const vertex in this) {
+      distances[vertex] = Infinity
+    }
 
-    if (distance > distances[vertex]) continue
+    distances[start] = 0
 
-    for (const [neighbor, weight] of Object.entries(this[vertex])) {
-      const newDistance = distance + weight
+    const pq = [[0, start]]
+    while (pq.length > 0) {
+      const [distance, vertex] = pq.pop()
 
-      if (newDistance < distances[neighbor]) {
-        distances[neighbor] = newDistance
-        pq.push([newDistance, neighbor])
+      if (distance > distances[vertex]) continue
+
+      for (const [neighbor, weight] of Object.entries(this[vertex])) {
+        const newDistance = distance + weight
+
+        if (newDistance < distances[neighbor]) {
+          distances[neighbor] = newDistance
+          pq.push([newDistance, neighbor])
+        }
       }
     }
-  }
 
-  return distances[end]
-}
+    return distances[end]
+  }
+})
 
 // Functions
 
