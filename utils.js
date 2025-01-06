@@ -1,7 +1,7 @@
 // Number
 
 Number.prototype.toBin = function () {
-  return (this >>> 0).toString(2)
+  return this.toString(2)
 }
 
 Number.prototype.toDec = function () {
@@ -59,7 +59,7 @@ String.prototype.isNum = function () {
 }
 
 String.prototype.toBin = function () {
-  return (this >>> 0).toString(2)
+  return this.toString(2)
 }
 
 String.prototype.toDec = function () {
